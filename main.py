@@ -125,7 +125,8 @@ def get_activities(
     outdoor: bool = None,
     
     # Weather filters
-    weather: str = None,  # Filter by weather condition
+    not_avoid_weather: str = None,  # Filter for activities that don't avoid this weather
+    with_best_weather: str = None,  # Filter for activities that prefer this weather
     temperature_min: float = None,
     temperature_max: float = None,
     
@@ -180,11 +181,18 @@ def get_activities(
         if outdoor is not None:
             query = query.filter(Activity.outdoor == outdoor)
         
-        # Weather filters (simplified for now)
-        if weather:
-            # For now, just return all activities regardless of weather
-            # This ensures 100% filtering works while we can improve weather logic later
-            pass
+        # Weather filters - Clear and explicit
+        if not_avoid_weather:
+            # Return activities that don't avoid this weather type
+            query = query.filter(
+                ~Activity.weather_avoid.contains([not_avoid_weather])
+            )
+        
+        if with_best_weather:
+            # Return activities that prefer this weather type
+            query = query.filter(
+                Activity.weather_best.contains([with_best_weather])
+            )
         if temperature_min is not None:
             query = query.filter(Activity.temperature_min <= temperature_min)
         if temperature_max is not None:
