@@ -185,7 +185,7 @@ def get_activities(
             # Simple weather filtering - exclude activities that avoid this weather
             from sqlalchemy import text
             query = query.filter(
-                ~text("weather_avoid::jsonb @> :weather_param")
+                text("NOT (weather_avoid::jsonb @> :weather_param)")
             ).params(weather_param=f'["{weather}"]')
         if temperature_min is not None:
             query = query.filter(Activity.temperature_min <= temperature_min)
