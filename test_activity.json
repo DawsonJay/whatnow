@@ -1,0 +1,21 @@
+[
+  {
+    "name": "Test Activity",
+    "description": "A test activity for bulk import",
+    "energy_physical": 5.0,
+    "energy_mental": 5.0,
+    "social_level": 3.0,
+    "duration_min": 30,
+    "duration_max": 60,
+    "indoor": true,
+    "outdoor": false,
+    "weather_best": ["sunny"],
+    "weather_avoid": ["rainy"],
+    "temperature_min": 18,
+    "temperature_max": 26,
+    "time_of_day": ["afternoon"],
+    "cost": "free",
+    "category": "physical",
+    "tags": ["test"]
+  }
+]

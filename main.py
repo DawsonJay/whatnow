@@ -6,6 +6,7 @@ AI-powered activity recommendation system
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List
 import os
 
 # Database imports with graceful fallback
@@ -168,6 +169,55 @@ def create_activity(activity: ActivityCreate):
         raise HTTPException(
             status_code=400,
             detail=f"Failed to create activity: {str(e)}"
+        )
+
+@app.post("/activities/bulk")
+def bulk_import_activities(activities: List[ActivityCreate]):
+    """Bulk import activities with strict validation"""
+    db = get_database_session()
+    
+    try:
+        from database.models import Activity
+        
+        # Check for duplicates by name
+        existing_names = {name[0] for name in db.query(Activity.name).all()}
+        new_names = {activity.name for activity in activities}
+        
+        duplicates = existing_names.intersection(new_names)
+        if duplicates:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Duplicate activities found: {list(duplicates)}"
+            )
+        
+        # Validate all activities pass schema validation
+        validated_activities = []
+        for activity in activities:
+            try:
+                validated_activity = Activity(**activity.model_dump())
+                validated_activities.append(validated_activity)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid activity data: {str(e)}"
+                )
+        
+        # Add all activities in a transaction
+        db.add_all(validated_activities)
+        db.commit()
+        
+        return {
+            "message": f"Successfully imported {len(validated_activities)} activities",
+            "count": len(validated_activities)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Bulk import failed: {str(e)}"
         )
 
 # ============================================================================
