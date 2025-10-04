@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """
 WhatNow FastAPI Application
-Main entry point for the activity recommendation system
+AI-powered activity recommendation system
 """
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-# Try to import database modules, but don't fail if they don't work
+# Database imports with graceful fallback
 try:
-    from sqlalchemy.orm import Session
     from database.schemas import ActivityCreate, ActivityResponse
     DATABASE_AVAILABLE = True
-    print("Database modules imported successfully")
 except Exception as e:
     print(f"Warning: Could not import database modules: {e}")
     DATABASE_AVAILABLE = False
@@ -34,8 +32,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database setup will be done when needed
-print("Database setup will be done when endpoints are called")
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
+def get_database_session():
+    """Get database session with error handling"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not available"
+        )
+    
+    try:
+        from database.connection import get_db
+        return next(get_db())
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database connection failed: {str(e)}"
+        )
+
+# ============================================================================
+# BASIC ENDPOINTS
+# ============================================================================
 
 @app.get("/")
 def root():
@@ -57,26 +77,22 @@ def test_database():
         from database.connection import get_db
         from sqlalchemy import text
         db = next(get_db())
-        # Simple query to test connection
         result = db.execute(text("SELECT 1 as test")).fetchone()
         return {"database": "connected", "test": result[0]}
     except Exception as e:
         return {"database": "error", "error": str(e)}
 
-# Database endpoints
+# ============================================================================
+# ACTIVITY ENDPOINTS
+# ============================================================================
+
 @app.get("/activities/categories")
 def get_categories():
     """Get all available activity categories"""
-    if not DATABASE_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Database not available"
-        )
+    db = get_database_session()
     
     try:
-        from database.connection import get_db
         from database.models import Activity
-        db = next(get_db())
         categories = db.query(Activity.category).distinct().all()
         return [cat[0] for cat in categories if cat[0]]
     except Exception as e:
@@ -92,17 +108,10 @@ def get_activities(
     energy_max: float = None
 ):
     """Get all activities with optional filtering"""
-    if not DATABASE_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Database not available"
-        )
+    db = get_database_session()
     
     try:
-        from database.connection import get_db
         from database.models import Activity
-        db = next(get_db())
-        
         query = db.query(Activity)
         
         if category:
@@ -123,16 +132,10 @@ def get_activities(
 @app.get("/activities/{activity_id}")
 def get_activity(activity_id: int):
     """Get a specific activity by ID"""
-    if not DATABASE_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Database not available"
-        )
+    db = get_database_session()
     
     try:
-        from database.connection import get_db
         from database.models import Activity
-        db = next(get_db())
         activity = db.query(Activity).filter(Activity.id == activity_id).first()
         if not activity:
             raise HTTPException(
@@ -151,16 +154,10 @@ def get_activity(activity_id: int):
 @app.post("/activities")
 def create_activity(activity: ActivityCreate):
     """Create a new activity"""
-    if not DATABASE_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Database not available"
-        )
+    db = get_database_session()
     
     try:
-        from database.connection import get_db
         from database.models import Activity
-        db = next(get_db())
         db_activity = Activity(**activity.model_dump())
         db.add(db_activity)
         db.commit()
@@ -173,8 +170,11 @@ def create_activity(activity: ActivityCreate):
             detail=f"Failed to create activity: {str(e)}"
         )
 
+# ============================================================================
+# APPLICATION STARTUP
+# ============================================================================
+
 if __name__ == "__main__":
     import uvicorn
-    import os
     port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
