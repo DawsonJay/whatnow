@@ -6,11 +6,19 @@ Main entry point for the activity recommendation system
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from database.connection import get_db, engine, Base
-from database.models import Activity
-from database.schemas import ActivityCreate, ActivityResponse
 import os
+
+# Try to import database modules, but don't fail if they don't work
+try:
+    from sqlalchemy.orm import Session
+    from database.connection import get_db, engine, Base
+    from database.models import Activity
+    from database.schemas import ActivityCreate, ActivityResponse
+    DATABASE_AVAILABLE = True
+    print("Database modules imported successfully")
+except Exception as e:
+    print(f"Warning: Could not import database modules: {e}")
+    DATABASE_AVAILABLE = False
 
 # Create FastAPI app
 app = FastAPI(
@@ -29,12 +37,15 @@ app.add_middleware(
 )
 
 # Create database tables (with error handling)
-try:
-    Base.metadata.create_all(bind=engine)
-    print("Database tables created successfully")
-except Exception as e:
-    print(f"Warning: Could not create database tables: {e}")
-    print("This is expected if DATABASE_URL is not set yet")
+if DATABASE_AVAILABLE:
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Warning: Could not create database tables: {e}")
+        print("This is expected if DATABASE_URL is not set yet")
+else:
+    print("Database not available - skipping table creation")
 
 @app.get("/")
 def root():
@@ -47,9 +58,14 @@ def health_check():
     return {"status": "ok", "service": "whatnow"}
 
 @app.get("/db-test")
-def test_database(db: Session = Depends(get_db)):
+def test_database():
     """Test database connection"""
+    if not DATABASE_AVAILABLE:
+        return {"database": "not_available", "error": "Database modules not imported"}
+    
     try:
+        from database.connection import get_db
+        db = next(get_db())
         # Simple query to test connection
         result = db.execute("SELECT 1 as test").fetchone()
         return {"database": "connected", "test": result[0]}
@@ -57,15 +73,24 @@ def test_database(db: Session = Depends(get_db)):
         return {"database": "error", "error": str(e)}
 
 # Database endpoints
-@app.get("/activities", response_model=list[ActivityResponse])
+@app.get("/activities")
 def get_activities(
     category: str = None,
     energy_min: float = None,
-    energy_max: float = None,
-    db: Session = Depends(get_db)
+    energy_max: float = None
 ):
     """Get all activities with optional filtering"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not available"
+        )
+    
     try:
+        from database.connection import get_db
+        from database.models import Activity
+        db = next(get_db())
+        
         query = db.query(Activity)
         
         if category:
