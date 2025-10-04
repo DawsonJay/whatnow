@@ -180,13 +180,13 @@ def get_activities(
         if outdoor is not None:
             query = query.filter(Activity.outdoor == outdoor)
         
-        # Weather filters
-        if weather:
-            # More permissive weather filtering - include activities that don't avoid this weather
-            from sqlalchemy import text
-            query = query.filter(
-                ~text("weather_avoid::jsonb @> :weather_param")
-            ).params(weather_param=f'["{weather}"]')
+        # Weather filters (temporarily disabled for debugging)
+        # if weather:
+        #     # More permissive weather filtering - include activities that don't avoid this weather
+        #     from sqlalchemy import text
+        #     query = query.filter(
+        #         ~text("weather_avoid::jsonb @> :weather_param")
+        #     ).params(weather_param=f'["{weather}"]')
         if temperature_min is not None:
             query = query.filter(Activity.temperature_min <= temperature_min)
         if temperature_max is not None:
