@@ -185,9 +185,9 @@ def get_activities(
             # Check if weather is in weather_best and not in weather_avoid
             from sqlalchemy import text
             query = query.filter(
-                text("weather_best @> :weather_param")
+                text("weather_best::jsonb @> :weather_param::jsonb")
             ).filter(
-                ~text("weather_avoid @> :weather_param")
+                ~text("weather_avoid::jsonb @> :weather_param::jsonb")
             ).params(weather_param=f'["{weather}"]')
         if temperature_min is not None:
             query = query.filter(Activity.temperature_min <= temperature_min)
@@ -197,12 +197,12 @@ def get_activities(
         # Time of day filter
         if time_of_day:
             from sqlalchemy import text
-            query = query.filter(text("time_of_day @> :time_param")).params(time_param=f'["{time_of_day}"]')
+            query = query.filter(text("time_of_day::jsonb @> :time_param::jsonb")).params(time_param=f'["{time_of_day}"]')
         
         # Tag filters
         if tag:
             from sqlalchemy import text
-            query = query.filter(text("tags @> :tag_param")).params(tag_param=f'["{tag}"]')
+            query = query.filter(text("tags::jsonb @> :tag_param::jsonb")).params(tag_param=f'["{tag}"]')
         
         if tags:
             from sqlalchemy import text, or_
@@ -210,10 +210,10 @@ def get_activities(
             if tag_logic.lower() == "and":
                 # Activities must have ALL specified tags
                 for tag_item in tag_list:
-                    query = query.filter(text("tags @> :tag_param")).params(tag_param=f'["{tag_item}"]')
+                    query = query.filter(text("tags::jsonb @> :tag_param::jsonb")).params(tag_param=f'["{tag_item}"]')
             else:
                 # Activities must have ANY of the specified tags (OR logic)
-                tag_filters = [text("tags @> :tag_param").params(tag_param=f'["{tag_item}"]') for tag_item in tag_list]
+                tag_filters = [text("tags::jsonb @> :tag_param::jsonb").params(tag_param=f'["{tag_item}"]') for tag_item in tag_list]
                 query = query.filter(or_(*tag_filters))
         
         # Search filter
