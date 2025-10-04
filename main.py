@@ -120,10 +120,19 @@ def get_activities(
             detail=f"Failed to fetch activities: {str(e)}"
         )
 
-@app.get("/activities/{activity_id}", response_model=ActivityResponse)
-def get_activity(activity_id: int, db: Session = Depends(get_db)):
+@app.get("/activities/{activity_id}")
+def get_activity(activity_id: int):
     """Get a specific activity by ID"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not available"
+        )
+    
     try:
+        from database.connection import get_db
+        from database.models import Activity
+        db = next(get_db())
         activity = db.query(Activity).filter(Activity.id == activity_id).first()
         if not activity:
             raise HTTPException(
@@ -139,22 +148,19 @@ def get_activity(activity_id: int, db: Session = Depends(get_db)):
             detail=f"Failed to fetch activity: {str(e)}"
         )
 
-@app.get("/activities/categories")
-def get_categories(db: Session = Depends(get_db)):
-    """Get all available activity categories"""
-    try:
-        categories = db.query(Activity.category).distinct().all()
-        return [cat[0] for cat in categories if cat[0]]
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch categories: {str(e)}"
-        )
-
-@app.post("/activities", response_model=ActivityResponse)
-def create_activity(activity: ActivityCreate, db: Session = Depends(get_db)):
+@app.post("/activities")
+def create_activity(activity: ActivityCreate):
     """Create a new activity"""
+    if not DATABASE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not available"
+        )
+    
     try:
+        from database.connection import get_db
+        from database.models import Activity
+        db = next(get_db())
         db_activity = Activity(**activity.model_dump())
         db.add(db_activity)
         db.commit()
