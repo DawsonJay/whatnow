@@ -183,10 +183,18 @@ def get_activities(
         # Weather filters
         if weather:
             # Simple weather filtering - exclude activities that avoid this weather
+            # This works for both SQLite and PostgreSQL
             from sqlalchemy import text
-            query = query.filter(
-                text("NOT (weather_avoid::jsonb @> :weather_param)")
-            ).params(weather_param=f'["{weather}"]')
+            if "postgresql" in str(db.bind.url):
+                # PostgreSQL-specific JSONB query
+                query = query.filter(
+                    text("NOT (weather_avoid::jsonb @> :weather_param)")
+                ).params(weather_param=f'["{weather}"]')
+            else:
+                # SQLite fallback - simple string search
+                query = query.filter(
+                    ~Activity.weather_avoid.contains([weather])
+                )
         if temperature_min is not None:
             query = query.filter(Activity.temperature_min <= temperature_min)
         if temperature_max is not None:
