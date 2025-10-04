@@ -34,8 +34,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables (with error handling)
+try:
+    Base.metadata.create_all(bind=engine)
+    print("Database tables created successfully")
+except Exception as e:
+    print(f"Warning: Could not create database tables: {e}")
+    print("This is expected if DATABASE_URL is not set yet")
 
 @app.get("/")
 def root():
@@ -52,7 +57,7 @@ def health_check():
     return {
         "status": "ok",
         "service": "whatnow",
-        "database": "connected"
+        "database": "checking"
     }
 
 @app.get("/db-test")

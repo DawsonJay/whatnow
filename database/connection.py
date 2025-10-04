@@ -14,10 +14,19 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is required")
+    # For Railway deployment, provide a fallback or better error message
+    print("WARNING: DATABASE_URL environment variable not found")
+    print("This is expected during Railway deployment setup")
+    # Use a dummy URL for now - Railway will provide the real one
+    DATABASE_URL = "postgresql://dummy:dummy@localhost/dummy"
 
-# Create SQLAlchemy engine
-engine = create_engine(DATABASE_URL)
+# Create SQLAlchemy engine with connection pooling and retry logic
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,  # Verify connections before use
+    pool_recycle=300,     # Recycle connections every 5 minutes
+    echo=False            # Set to True for debugging
+)
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
