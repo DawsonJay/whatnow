@@ -55,9 +55,10 @@ def test_database():
     
     try:
         from database.connection import get_db
+        from sqlalchemy import text
         db = next(get_db())
         # Simple query to test connection
-        result = db.execute("SELECT 1 as test").fetchone()
+        result = db.execute(text("SELECT 1 as test")).fetchone()
         return {"database": "connected", "test": result[0]}
     except Exception as e:
         return {"database": "error", "error": str(e)}
