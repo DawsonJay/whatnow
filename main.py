@@ -78,7 +78,7 @@ def test_database(db: Session = Depends(get_db)):
 def create_activity(activity: ActivityCreate, db: Session = Depends(get_db)):
     """Create a new activity"""
     try:
-        db_activity = Activity(**activity.dict())
+        db_activity = Activity(**activity.model_dump())
         db.add(db_activity)
         db.commit()
         db.refresh(db_activity)
