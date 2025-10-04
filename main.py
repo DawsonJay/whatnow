@@ -11,8 +11,6 @@ import os
 # Try to import database modules, but don't fail if they don't work
 try:
     from sqlalchemy.orm import Session
-    from database.connection import get_db, engine, Base
-    from database.models import Activity
     from database.schemas import ActivityCreate, ActivityResponse
     DATABASE_AVAILABLE = True
     print("Database modules imported successfully")
@@ -36,16 +34,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create database tables (with error handling)
-if DATABASE_AVAILABLE:
-    try:
-        Base.metadata.create_all(bind=engine)
-        print("Database tables created successfully")
-    except Exception as e:
-        print(f"Warning: Could not create database tables: {e}")
-        print("This is expected if DATABASE_URL is not set yet")
-else:
-    print("Database not available - skipping table creation")
+# Database setup will be done when needed
+print("Database setup will be done when endpoints are called")
 
 @app.get("/")
 def root():
