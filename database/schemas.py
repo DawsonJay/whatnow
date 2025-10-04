@@ -21,8 +21,8 @@ class ActivityBase(BaseModel):
     temperature_min: float = Field(default=-10)
     temperature_max: float = Field(default=40)
     time_of_day: List[str] = Field(default_factory=list)
-    cost: Optional[str] = Field(None, regex="^(free|low|medium|high)$")
-    category: Optional[str] = Field(None, regex="^(physical|creative|social|relaxing|productive|entertainment|learning|other)$")
+    cost: Optional[str] = Field(None, pattern="^(free|low|medium|high)$")
+    category: Optional[str] = Field(None, pattern="^(physical|creative|social|relaxing|productive|entertainment|learning|other)$")
     tags: List[str] = Field(default_factory=list)
 
 class ActivityCreate(ActivityBase):
@@ -33,5 +33,4 @@ class ActivityResponse(ActivityBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

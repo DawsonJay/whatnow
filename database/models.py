@@ -3,7 +3,7 @@ SQLAlchemy models for WhatNow
 """
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, Text, DateTime
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 from sqlalchemy.sql import func
 from database.connection import Base
 
@@ -27,20 +27,20 @@ class Activity(Base):
     # Location & Weather
     indoor = Column(Boolean, nullable=False)
     outdoor = Column(Boolean, nullable=False)
-    weather_best = Column(JSONB, default=list)
-    weather_avoid = Column(JSONB, default=list)
+    weather_best = Column(JSON, default=list)
+    weather_avoid = Column(JSON, default=list)
     temperature_min = Column(Float, default=-10)
     temperature_max = Column(Float, default=40)
     
     # Time preferences
-    time_of_day = Column(JSONB, default=list)
+    time_of_day = Column(JSON, default=list)
     
     # Cost and category
     cost = Column(String(20))
     category = Column(String(50), index=True)
     
     # Flexible tags
-    tags = Column(JSONB, default=list)
+    tags = Column(JSON, default=list)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

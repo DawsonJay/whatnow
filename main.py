@@ -112,6 +112,18 @@ def list_activities(
             detail=f"Failed to fetch activities: {str(e)}"
         )
 
+@app.get("/activities/categories")
+def get_categories(db: Session = Depends(get_db)):
+    """Get all available activity categories"""
+    try:
+        categories = db.query(Activity.category).distinct().all()
+        return [cat[0] for cat in categories if cat[0]]
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch categories: {str(e)}"
+        )
+
 @app.get("/activities/{activity_id}", response_model=ActivityResponse)
 def get_activity(activity_id: int, db: Session = Depends(get_db)):
     """Get a specific activity by ID"""
@@ -129,18 +141,6 @@ def get_activity(activity_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to fetch activity: {str(e)}"
-        )
-
-@app.get("/activities/categories")
-def get_categories(db: Session = Depends(get_db)):
-    """Get all available activity categories"""
-    try:
-        categories = db.query(Activity.category).distinct().all()
-        return [cat[0] for cat in categories if cat[0]]
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch categories: {str(e)}"
         )
 
 if __name__ == "__main__":
