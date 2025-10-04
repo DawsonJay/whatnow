@@ -1,0 +1,16 @@
+# WhatNow Dependencies
+# Created: 2025-10-04
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Data Models
+pydantic==2.5.0
+
+# Environment
+python-dotenv==1.0.0
