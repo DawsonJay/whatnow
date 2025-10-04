@@ -186,7 +186,7 @@ def get_activities(
             # Return activities that don't avoid this weather type
             from sqlalchemy import text
             query = query.filter(
-                ~text("weather_avoid::jsonb @> :weather_param")
+                text("NOT (weather_avoid::jsonb @> :weather_param)")
             ).params(weather_param=f'["{not_avoid_weather}"]')
         
         if with_best_weather:
