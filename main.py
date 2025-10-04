@@ -104,23 +104,110 @@ def get_categories():
 
 @app.get("/activities")
 def get_activities(
+    # Basic filters
     category: str = None,
-    energy_min: float = None,
-    energy_max: float = None
+    cost: str = None,
+    
+    # Energy filters (0-10 scale)
+    energy_physical_min: float = None,
+    energy_physical_max: float = None,
+    energy_mental_min: float = None,
+    energy_mental_max: float = None,
+    social_level_min: float = None,
+    social_level_max: float = None,
+    
+    # Duration filters (minutes)
+    duration_min: int = None,
+    duration_max: int = None,
+    
+    # Location filters
+    indoor: bool = None,
+    outdoor: bool = None,
+    
+    # Weather filters
+    weather: str = None,  # Filter by weather condition
+    temperature_min: float = None,
+    temperature_max: float = None,
+    
+    # Time filters
+    time_of_day: str = None,  # morning, afternoon, evening, night
+    
+    # Tag filters
+    tag: str = None,  # Filter by specific tag
+    
+    # Search
+    search: str = None  # Search in name and description
 ):
-    """Get all activities with optional filtering"""
+    """Get all activities with comprehensive filtering options"""
     db = get_database_session()
     
     try:
         from database.models import Activity
+        from sqlalchemy import and_, or_
         query = db.query(Activity)
         
+        # Basic filters
         if category:
             query = query.filter(Activity.category == category)
-        if energy_min is not None:
-            query = query.filter(Activity.energy_physical >= energy_min)
-        if energy_max is not None:
-            query = query.filter(Activity.energy_physical <= energy_max)
+        if cost:
+            query = query.filter(Activity.cost == cost)
+        
+        # Energy filters
+        if energy_physical_min is not None:
+            query = query.filter(Activity.energy_physical >= energy_physical_min)
+        if energy_physical_max is not None:
+            query = query.filter(Activity.energy_physical <= energy_physical_max)
+        if energy_mental_min is not None:
+            query = query.filter(Activity.energy_mental >= energy_mental_min)
+        if energy_mental_max is not None:
+            query = query.filter(Activity.energy_mental <= energy_mental_max)
+        if social_level_min is not None:
+            query = query.filter(Activity.social_level >= social_level_min)
+        if social_level_max is not None:
+            query = query.filter(Activity.social_level <= social_level_max)
+        
+        # Duration filters
+        if duration_min is not None:
+            query = query.filter(Activity.duration_min >= duration_min)
+        if duration_max is not None:
+            query = query.filter(Activity.duration_max <= duration_max)
+        
+        # Location filters
+        if indoor is not None:
+            query = query.filter(Activity.indoor == indoor)
+        if outdoor is not None:
+            query = query.filter(Activity.outdoor == outdoor)
+        
+        # Weather filters
+        if weather:
+            # Check if weather is in weather_best and not in weather_avoid
+            query = query.filter(
+                Activity.weather_best.contains([weather])
+            ).filter(
+                ~Activity.weather_avoid.contains([weather])
+            )
+        if temperature_min is not None:
+            query = query.filter(Activity.temperature_min <= temperature_min)
+        if temperature_max is not None:
+            query = query.filter(Activity.temperature_max >= temperature_max)
+        
+        # Time of day filter
+        if time_of_day:
+            query = query.filter(Activity.time_of_day.contains([time_of_day]))
+        
+        # Tag filter
+        if tag:
+            query = query.filter(Activity.tags.contains([tag]))
+        
+        # Search filter
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Activity.name.ilike(search_term),
+                    Activity.description.ilike(search_term)
+                )
+            )
             
         activities = query.all()
         return activities
