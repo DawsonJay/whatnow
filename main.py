@@ -183,11 +183,12 @@ def get_activities(
         # Weather filters
         if weather:
             # Check if weather is in weather_best and not in weather_avoid
+            from sqlalchemy import text
             query = query.filter(
-                Activity.weather_best.contains([weather])
+                text("weather_best @> :weather_param")
             ).filter(
-                ~Activity.weather_avoid.contains([weather])
-            )
+                ~text("weather_avoid @> :weather_param")
+            ).params(weather_param=f'["{weather}"]')
         if temperature_min is not None:
             query = query.filter(Activity.temperature_min <= temperature_min)
         if temperature_max is not None:
@@ -195,22 +196,24 @@ def get_activities(
         
         # Time of day filter
         if time_of_day:
-            query = query.filter(Activity.time_of_day.contains([time_of_day]))
+            from sqlalchemy import text
+            query = query.filter(text("time_of_day @> :time_param")).params(time_param=f'["{time_of_day}"]')
         
         # Tag filters
         if tag:
-            query = query.filter(Activity.tags.contains([tag]))
+            from sqlalchemy import text
+            query = query.filter(text("tags @> :tag_param")).params(tag_param=f'["{tag}"]')
         
         if tags:
+            from sqlalchemy import text, or_
             tag_list = [t.strip() for t in tags.split(',')]
             if tag_logic.lower() == "and":
                 # Activities must have ALL specified tags
                 for tag_item in tag_list:
-                    query = query.filter(Activity.tags.contains([tag_item]))
+                    query = query.filter(text("tags @> :tag_param")).params(tag_param=f'["{tag_item}"]')
             else:
                 # Activities must have ANY of the specified tags (OR logic)
-                from sqlalchemy import or_
-                tag_filters = [Activity.tags.contains([tag_item]) for tag_item in tag_list]
+                tag_filters = [text("tags @> :tag_param").params(tag_param=f'["{tag_item}"]') for tag_item in tag_list]
                 query = query.filter(or_(*tag_filters))
         
         # Search filter
