@@ -46,6 +46,16 @@ def health_check():
     """Health check endpoint"""
     return {"status": "ok", "service": "whatnow"}
 
+@app.get("/db-test")
+def test_database(db: Session = Depends(get_db)):
+    """Test database connection"""
+    try:
+        # Simple query to test connection
+        result = db.execute("SELECT 1 as test").fetchone()
+        return {"database": "connected", "test": result[0]}
+    except Exception as e:
+        return {"database": "error", "error": str(e)}
+
 # Database endpoints
 @app.get("/activities", response_model=list[ActivityResponse])
 def get_activities(
