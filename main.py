@@ -184,15 +184,17 @@ def get_activities(
         # Weather filters - Clear and explicit
         if not_avoid_weather:
             # Return activities that don't avoid this weather type
+            from sqlalchemy import text
             query = query.filter(
-                ~Activity.weather_avoid.contains([not_avoid_weather])
-            )
+                ~text("weather_avoid::jsonb @> :weather_param")
+            ).params(weather_param=f'["{not_avoid_weather}"]')
         
         if with_best_weather:
             # Return activities that prefer this weather type
+            from sqlalchemy import text
             query = query.filter(
-                Activity.weather_best.contains([with_best_weather])
-            )
+                text("weather_best::jsonb @> :weather_param")
+            ).params(weather_param=f'["{with_best_weather}"]')
         if temperature_min is not None:
             query = query.filter(Activity.temperature_min <= temperature_min)
         if temperature_max is not None:
