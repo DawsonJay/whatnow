@@ -134,6 +134,8 @@ def get_activities(
     
     # Tag filters
     tag: str = None,  # Filter by specific tag
+    tags: str = None,  # Filter by multiple tags (comma-separated)
+    tag_logic: str = "or",  # "and" or "or" logic for multiple tags
     
     # Search
     search: str = None  # Search in name and description
@@ -195,9 +197,21 @@ def get_activities(
         if time_of_day:
             query = query.filter(Activity.time_of_day.contains([time_of_day]))
         
-        # Tag filter
+        # Tag filters
         if tag:
             query = query.filter(Activity.tags.contains([tag]))
+        
+        if tags:
+            tag_list = [t.strip() for t in tags.split(',')]
+            if tag_logic.lower() == "and":
+                # Activities must have ALL specified tags
+                for tag_item in tag_list:
+                    query = query.filter(Activity.tags.contains([tag_item]))
+            else:
+                # Activities must have ANY of the specified tags (OR logic)
+                from sqlalchemy import or_
+                tag_filters = [Activity.tags.contains([tag_item]) for tag_item in tag_list]
+                query = query.filter(or_(*tag_filters))
         
         # Search filter
         if search:
