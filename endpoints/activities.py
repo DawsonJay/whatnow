@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from utils.database import get_database_session, Activity
-from utils.embeddings import create_activity_payload
+# from utils.embeddings import create_activity_payload  # Removed for faster deployment
 
 router = APIRouter(prefix="/activities", tags=["activities"])
 
@@ -28,57 +28,58 @@ def clear_activities(db: Session = Depends(get_database_session)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to clear activities: {str(e)}")
 
-@router.post("/import-titles")
-def import_activity_titles(
+@router.post("/bulk-upload")
+def bulk_upload_activities(
     request: Dict[str, Any],
     db: Session = Depends(get_database_session)
 ):
     """
-    Import activity titles, check for duplicates, generate embeddings, and create database entries.
+    Bulk upload activities with pre-computed embeddings.
     
     Expected request format:
     {
-        "titles": ["Activity 1", "Activity 2", ...]
+        "activities": [
+            {"name": "Reading", "embedding": [0.1, 0.2, 0.3, ...]},
+            {"name": "Swimming", "embedding": [0.4, 0.5, 0.6, ...]}
+        ]
     }
     """
     try:
         # Validate request
-        if "titles" not in request:
-            raise HTTPException(status_code=400, detail="Missing 'titles' field in request")
+        if "activities" not in request:
+            raise HTTPException(status_code=400, detail="Missing 'activities' field")
         
-        titles = request["titles"]
-        if not isinstance(titles, list):
-            raise HTTPException(status_code=400, detail="'titles' must be a list")
+        activities = request["activities"]
+        if not isinstance(activities, list):
+            raise HTTPException(status_code=400, detail="'activities' must be a list")
         
-        if not titles:
+        if not activities:
             return {
-                "message": "No titles provided",
+                "message": "No activities provided",
                 "imported": 0,
                 "duplicates": 0,
                 "total": 0
             }
         
         # Check for duplicates
-        existing_activities = db.query(Activity).filter(Activity.name.in_(titles)).all()
+        activity_names = [activity["name"] for activity in activities]
+        existing_activities = db.query(Activity).filter(Activity.name.in_(activity_names)).all()
         existing_names = {activity.name for activity in existing_activities}
         
         # Filter out duplicates
-        new_titles = [title for title in titles if title not in existing_names]
+        new_activities = [activity for activity in activities if activity["name"] not in existing_names]
         
-        if not new_titles:
+        if not new_activities:
             return {
                 "message": "All activities already exist",
                 "imported": 0,
-                "duplicates": len(titles),
-                "total": len(titles)
+                "duplicates": len(activities),
+                "total": len(activities)
             }
-        
-        # Generate embeddings for new activities
-        activity_payload = create_activity_payload(new_titles)
         
         # Create database entries
         created_count = 0
-        for activity_data in activity_payload:
+        for activity_data in new_activities:
             try:
                 activity = Activity(
                     name=activity_data["name"],
@@ -93,17 +94,17 @@ def import_activity_titles(
         db.commit()
         
         return {
-            "message": f"Successfully imported {created_count} new activities",
+            "message": f"Successfully uploaded {created_count} new activities",
             "imported": created_count,
-            "duplicates": len(titles) - len(new_titles),
-            "total": len(titles)
+            "duplicates": len(activities) - len(new_activities),
+            "total": len(activities)
         }
         
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to import activities: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload activities: {str(e)}")
 
 @router.get("/")
 def list_activities(

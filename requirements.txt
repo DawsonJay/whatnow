@@ -15,6 +15,5 @@ pydantic==2.5.0
 # Environment
 python-dotenv==1.0.0
 
-# AI/ML
-sentence-transformers==2.7.0
-huggingface-hub==0.20.3
+# AI/ML (light dependencies only)
+# sentence-transformers and huggingface-hub removed for faster deployment
