@@ -7,10 +7,25 @@ import json
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from utils.database import get_database_session, Activity
+from utils.database import get_database_session, Activity, Base, engine
 # from utils.embeddings import create_activity_payload  # Removed for faster deployment
 
 router = APIRouter(prefix="/activities", tags=["activities"])
+
+@router.post("/init-db")
+def init_database():
+    """Initialize database tables with the current schema."""
+    try:
+        # Drop and recreate all tables
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        
+        return {
+            "message": "Database initialized successfully",
+            "tables_created": ["activities"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to initialize database: {str(e)}")
 
 @router.delete("/clear")
 def clear_activities(db: Session = Depends(get_database_session)):
