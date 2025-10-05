@@ -282,6 +282,36 @@ def create_activity(activity: ActivityCreate):
             detail=f"Failed to create activity: {str(e)}"
         )
 
+@app.delete("/activities/clear")
+def clear_all_activities():
+    """
+    Delete all activities from the database
+    CAUTION: This will permanently delete all activity data!
+    """
+    db = get_database_session()
+    
+    try:
+        from database.models import Activity
+        
+        # Count before deletion
+        count = db.query(Activity).count()
+        
+        # Delete all activities
+        db.query(Activity).delete()
+        db.commit()
+        
+        return {
+            "message": f"Successfully deleted {count} activities",
+            "deleted": count
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to clear activities: {str(e)}"
+        )
+
 @app.post("/activities/bulk")
 def bulk_import_activities(activities: List[ActivityCreate]):
     """Bulk import activities with strict validation"""
