@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from utils.database import get_database_session, Activity
-# from utils.embeddings import create_activity_payload  # Commented out for faster deployment
+from utils.embeddings import create_activity_payload
 
 router = APIRouter(prefix="/activities", tags=["activities"])
 
@@ -73,18 +73,21 @@ def import_activity_titles(
                 "total": len(titles)
             }
         
-        # Create database entries (without embeddings for now)
+        # Generate embeddings for new activities
+        activity_payload = create_activity_payload(new_titles)
+        
+        # Create database entries
         created_count = 0
-        for title in new_titles:
+        for activity_data in activity_payload:
             try:
                 activity = Activity(
-                    name=title,
-                    embedding=json.dumps([])  # Empty embedding for now
+                    name=activity_data["name"],
+                    embedding=json.dumps(activity_data["embedding"])
                 )
                 db.add(activity)
                 created_count += 1
             except Exception as e:
-                print(f"Error creating activity {title}: {str(e)}")
+                print(f"Error creating activity {activity_data['name']}: {str(e)}")
                 continue
         
         db.commit()
