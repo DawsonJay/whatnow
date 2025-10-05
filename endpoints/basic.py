@@ -10,6 +10,7 @@ router = APIRouter()
 @router.get("/")
 def read_root():
     """Root endpoint with API information."""
+    print("Root endpoint called")  # Debug logging
     return {
         "message": "WhatNow AI API",
         "version": "2.0.0",
@@ -23,4 +24,5 @@ def read_root():
 @router.get("/health")
 def health_check():
     """Health check endpoint."""
+    print("Health check endpoint called")  # Debug logging
     return {"status": "healthy", "service": "WhatNow AI API"}
