@@ -35,14 +35,14 @@ def upload_to_railway():
     print(f"\nUploading {len(payload['activities'])} activities...")
     try:
         response = requests.post(
-            f"{api_url}/activities/bulk",
-            json=payload['activities'],
+            f"{api_url}/activities/bulk-upload",
+            json={"activities": payload['activities']},
             headers={'Content-Type': 'application/json'}
         )
         
         if response.status_code == 200:
             result = response.json()
-            print(f"✓ Successfully uploaded {result['count']} activities")
+            print(f"✓ Successfully uploaded {result['imported']} activities")
             print(f"✓ Message: {result['message']}")
         else:
             print(f"✗ Upload failed with status {response.status_code}")

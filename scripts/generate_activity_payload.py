@@ -31,10 +31,10 @@ def generate_activity_payload():
         # Generate embedding for the activity name
         embedding = model.encode(name)
         
-        # Create activity object
+        # Create activity object (new simple schema)
         activity = {
             "name": name,
-            "embedding": json.dumps(embedding.tolist())  # Convert to JSON string
+            "embedding": embedding.tolist()  # Keep as list for JSON serialization
         }
         
         activities.append(activity)

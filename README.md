@@ -1,121 +1,108 @@
-# WhatNow
+# WhatNow AI
 
-**An AI-powered activity recommendation system that learns your preferences over time.**
+**An AI-powered activity recommendation system with semantic embeddings and two-layer learning.**
 
 ## Overview
 
-WhatNow helps you decide what to do when you're feeling indecisive. Set your current mood, energy level, social preference, available time, and weather conditions, and WhatNow suggests activities tailored to your preferences. The AI learns from your choices and gets better at predicting what you'll enjoy.
+WhatNow uses AI to help you discover activities that match your current mood and context. The system learns your preferences through a two-layer AI architecture and provides personalized recommendations using semantic embeddings.
 
 ## Core Features
 
-### 🎯 Smart Recommendations
-- Input your current state using intuitive sliders (mood, energy, social, time)
-- Get 50 personalized activity suggestions
-- AI highlights top recommendations based on learned preferences
-
-### 🔄 Iterative Refinement
-- Pick your top 3 favorite activities from suggestions
-- Regenerate for 50 new suggestions if needed
-- Previous favorites accumulate across rounds
-- Keep refining until you find the perfect activity
-
 ### 🧠 Two-Layer AI Learning System
 
-**Within-Session Learning (Fast)**
-- Temporary AI copy learns aggressively during your session (learning rate: 0.8)
-- Each regeneration produces better suggestions based on your picks
-- Helps you quickly zero in on what you want right now
-- Resets after session ends
+**Base AI (Backend) - Slow Learning**
+- Learns general patterns across all users (learning rate: 0.01)
+- Uses SGDClassifier for online learning
+- Stores model weights in database for persistence
+- Gets smarter with every user interaction
 
-**Cross-Session Learning (Slow)**
-- Persistent base AI learns gradually from all sessions (learning rate: 0.02)
-- Builds long-term understanding of your preferences
-- Robust to outliers - one bad session won't break it
-- Gets smarter with every session
+**Session AI (Frontend) - Fast Learning**
+- Learns individual user preferences quickly (learning rate: 0.3)
+- JavaScript-based SGDClassifier
+- Resets each session, starts as clone of Base AI
+- Adapts to user's current session preferences
 
-### 📊 Context-Aware Learning
-- Learns different preferences for different contexts
-- Understands "I like hiking when sunny and energetic, but Netflix when rainy and tired"
-- Adapts to weather, time of day, season, and your current state
+### 🎯 Semantic Activity Matching
+- Uses sentence embeddings (all-MiniLM-L6-v2) for activity understanding
+- Activities matched by semantic similarity, not manual metadata
+- Context tags (mood, energy, weather) combined with embeddings
+- AI learns which activities users prefer in different contexts
+
+### 📊 Context-Aware Recommendations
+- Users select mood/context tags instead of sliders
+- AI finds semantically similar activities
+- Learns user preferences for different tag combinations
+- Adapts to weather, time, energy, and social context
 
 ## How It Works
 
-1. **Set Your Context**: Use sliders to indicate mood, social desire, energy, time available, and weather
-2. **Get Suggestions**: AI generates 50 activity suggestions based on your context and learned preferences
-3. **Pick Top 3**: Select your favorite activities from the suggestions
-4. **Refine (Optional)**: Click regenerate for new suggestions influenced by your picks
-5. **Repeat**: Keep refining until satisfied, accumulating favorites across rounds
-6. **Choose & Do**: Pick one activity from your accumulated favorites to actually do
-7. **AI Learns**: System learns from your choices to improve future suggestions
+1. **Select Context Tags**: Choose mood tags (chill, energetic, focused) and context (indoor, outdoor, rainy, etc.)
+2. **Backend Ranking**: Base AI uses embeddings to find similar activities, returns top 100 candidates
+3. **Frontend Re-ranking**: Session AI re-ranks based on your individual preferences
+4. **Compare Activities**: System shows 2 activities for you to choose between
+5. **AI Learning**: Both AIs learn from your choice and get better at recommendations
+6. **Repeat**: Continue comparing until you find the perfect activity
 
 ## Technology Stack
-
-### Frontend
-- **React** - UI framework
-- **TypeScript** - type safety
-- **Tailwind CSS** - styling
-- **React DnD** (optional) - drag and drop interactions
 
 ### Backend
 - **Python** - backend language
 - **FastAPI** - REST API framework
-- **PostgreSQL** - database for activities and user data
+- **PostgreSQL** - database for activities and embeddings
 - **SQLAlchemy** - ORM
+- **sentence-transformers** - embedding generation (local only)
 
 ### AI/ML
-- **Contextual Bandits** - recommendation algorithm
-- **Reinforcement Learning** - continuous learning approach
-- **Custom implementation** or **Vowpal Wabbit** - bandit library
+- **Sentence Embeddings** - semantic activity understanding
+- **SGDClassifier** - online learning for both AIs
+- **Two-layer architecture** - Base AI (persistent) + Session AI (temporary)
+
+### Frontend (Planned)
+- **JavaScript** - Session AI implementation
+- **Modern UI** - tag-based interface instead of sliders
+- **Real-time learning** - AI updates after each comparison
 
 ### Deployment
 - **Railway** - hosting platform
-- **Docker** - containerization
+- **Fast deployments** - no heavy AI dependencies in production
 
 ## Project Status
 
-**Status**: Phase 1 Complete - Backend Ready  
+**Status**: Phase 1 Complete - AI Infrastructure Ready  
 **Created**: 2025-10-04  
-**Current Phase**: Backend API deployed with comprehensive filtering system
+**Current Phase**: Backend API deployed with AI-ready infrastructure
 
 ## Development Roadmap
 
 - [x] Complete technical specification
-- [x] Design database schema
-- [x] Build backend API
-- [x] Add activity database with tagging system
-- [x] Deploy to Railway
-- [ ] Implement contextual bandit AI
-- [ ] Create frontend UI
-- [ ] Implement two-layer learning system
-- [ ] User testing and refinement
+- [x] Design AI-focused database schema
+- [x] Build FastAPI backend with organized structure
+- [x] Deploy to Railway with fast deployments
+- [x] Create local embedding generation system
+- [ ] Implement Base AI with online learning
+- [ ] Create Session AI in JavaScript frontend
+- [ ] Build tag-based UI interface
+- [ ] End-to-end testing and optimization
 
 ## Phase 1 Achievements
 
-### ✅ **Database & API**
-- **72 production-ready activities** across 7 categories
-- **PostgreSQL database** with comprehensive schema
-- **FastAPI backend** with full CRUD operations
+### ✅ **AI Infrastructure**
+- **Simplified database schema** (id, name, embedding) for AI system
+- **FastAPI backend** with organized endpoint structure
 - **Railway deployment** at https://whatnow-production.up.railway.app
-
-### ✅ **Comprehensive Filtering System**
-- **Category filtering**: physical, creative, social, relaxing, productive, entertainment, learning
-- **Energy filtering**: physical, mental, social levels (0-10 scale)
-- **Duration filtering**: min/max time requirements
-- **Location filtering**: indoor/outdoor activities
-- **Weather filtering**: `not_avoid_weather` and `with_best_weather` parameters
-- **Time filtering**: morning, afternoon, evening, night preferences
-- **Tag filtering**: single and multiple tags with AND/OR logic
-- **Search filtering**: text search in names and descriptions
-- **Temperature filtering**: min/max temperature ranges
+- **Fast deployments** (2-3 minutes) without heavy AI dependencies
 
 ### ✅ **API Endpoints**
-- `GET /activities` - Comprehensive filtering with 15+ parameters
-- `GET /activities/{id}` - Individual activity details
-- `GET /activities/categories` - Available categories
-- `POST /activities` - Create new activity
-- `POST /activities/bulk` - Bulk import with validation
-- `GET /health` - Health check
-- `GET /db-test` - Database connectivity test
+- `GET /` - Root endpoint with API information
+- `GET /health` - Health check endpoint
+- `DELETE /activities/clear` - Clear all activities
+- `POST /activities/bulk-upload` - Upload activities with pre-computed embeddings
+- `GET /activities/` - List activities with pagination
+
+### ✅ **Local Development Tools**
+- **Embedding generation script** for all 1250 activities
+- **Upload script** for Railway database population
+- **Organized code structure** with endpoints/ and utils/ directories
 
 ## Why WhatNow?
 
