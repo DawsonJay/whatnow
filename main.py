@@ -7,6 +7,8 @@ A clean, organized FastAPI application for AI-powered activity recommendations.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from endpoints.basic import router as basic_router
 from endpoints.activities import router as activities_router
 from utils.database import init_database
@@ -48,6 +50,12 @@ app.add_middleware(
 # Include routers
 app.include_router(basic_router)
 app.include_router(activities_router)
+
+# Serve the frontend
+@app.get("/")
+async def serve_frontend():
+    """Serve the frontend HTML file."""
+    return FileResponse("index.html")
 
 if __name__ == "__main__":
     import uvicorn

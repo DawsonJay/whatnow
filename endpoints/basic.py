@@ -7,19 +7,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/")
-def read_root():
-    """Root endpoint with API information."""
-    print("Root endpoint called")  # Debug logging
-    return {
-        "message": "WhatNow AI API",
-        "version": "2.0.0",
-        "description": "AI-powered activity recommendation system",
-        "endpoints": {
-            "health": "/health",
-            "activities": "/activities/*"
-        }
-    }
+# Root endpoint moved to main.py to serve frontend
 
 @router.get("/health")
 def health_check():
