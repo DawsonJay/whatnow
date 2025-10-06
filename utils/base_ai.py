@@ -22,7 +22,7 @@ class BaseAI:
             loss='log_loss'  # Logistic regression for binary classification
         )
         self.is_fitted = False
-        self.context_dim = 40  # 40 context tags
+        self.context_dim = 43  # 43 context tags
         self.embedding_dim = 384  # 384-dimensional embeddings
     
     def get_recommendations(self, context_vector: np.ndarray, activities: List[Dict], top_k: int = 100) -> List[Dict]:
@@ -30,7 +30,7 @@ class BaseAI:
         Get top activity recommendations based on context.
         
         Args:
-            context_vector: 40-dimensional context vector
+            context_vector: 43-dimensional context vector
             activities: List of activity dictionaries with embeddings
             top_k: Number of top recommendations to return
             
@@ -65,14 +65,14 @@ class BaseAI:
         Train the model with user feedback.
         
         Args:
-            context_vector: 40-dimensional context vector
+            context_vector: 43-dimensional context vector
             chosen_activity: The activity the user chose
             reward: Reward signal (1.0 for positive, 0.0 for negative)
         """
         try:
             # Validate context vector dimensions
-            if len(context_vector) != 40:
-                print(f"Error: Context vector has {len(context_vector)} dimensions, expected 40")
+            if len(context_vector) != 43:
+                print(f"Error: Context vector has {len(context_vector)} dimensions, expected 43")
                 return False
             
             # For contextual bandits, we use the context vector as features
@@ -163,45 +163,38 @@ class BaseAI:
 
 def encode_context(context_tags: List[str]) -> np.ndarray:
     """
-    Convert context tags to 40-dimensional context vector.
+    Convert context tags to 43-dimensional context vector.
     
     Args:
         context_tags: List of selected context tags
         
     Returns:
-        40-dimensional numpy array
+        43-dimensional numpy array
     """
-    # Tag to index mapping (40 total tags)
+    # Tag to index mapping (43 total tags)
     tag_to_index = {
-        # Mood tags (0-6)
-        "arty": 0, "chill": 1, "energetic": 2, "creative": 3, 
-        "relaxed": 4, "social": 5, "introverted": 6,
+        # Weather tags (0-4)
+        "sunny": 0, "cloudy": 1, "raining": 2, "snowy": 3, "stormy": 4,
         
-        # Weather tags (7-11)
-        "sunny": 7, "rainy": 8, "cloudy": 9, "snowy": 10, "windy": 11,
+        # Time tags (5-8)
+        "morning": 5, "afternoon": 6, "evening": 7, "night": 8,
         
-        # Time tags (12-17)
-        "morning": 12, "afternoon": 13, "evening": 14, "night": 15,
-        "weekend": 16, "weekday": 17,
+        # Season tags (9-12)
+        "spring": 9, "summer": 10, "autumn": 11, "winter": 12,
         
-        # Location tags (18-23)
-        "indoor": 18, "outdoor": 19, "home": 20, "cafe": 21, "park": 22, "beach": 23,
+        # Intensity tags (13-17)
+        "chill": 13, "tired": 14, "exciting": 15, "energetic": 16, "intense": 17,
         
-        # Social tags (24-28)
-        "alone": 24, "with_friends": 25, "with_family": 26, "with_partner": 27, "group_activity": 28,
-        
-        # Energy tags (29-31)
-        "low_energy": 29, "medium_energy": 30, "high_energy": 31,
-        
-        # Activity type tags (32-37)
-        "physical": 32, "mental": 33, "artistic": 34, "social": 35, "learning": 36, "entertainment": 37,
-        
-        # Additional tags (38-39)
-        "productive": 38, "mindful": 39
+        # Mood tags (18-39)
+        "stressed": 18, "motivated": 19, "adventurous": 20, "nostalgic": 21, "romantic": 22,
+        "playful": 23, "focused": 24, "distracted": 25, "inspired": 26, "friendly": 27,
+        "shy": 28, "curious": 29, "analytical": 30, "emotional": 31, "burnt_out": 32,
+        "artistic": 33, "practical": 34, "hungry": 35, "natural": 36, "urban": 37,
+        "anxious": 38, "overwhelmed": 39, "upset": 40, "happy": 41, "festive": 42
     }
     
-    # Initialize context vector
-    context_vector = np.zeros(40)
+    # Initialize context vector (43 dimensions for all tags)
+    context_vector = np.zeros(43)
     
     # Set selected tags to 1.0
     for tag in context_tags:
