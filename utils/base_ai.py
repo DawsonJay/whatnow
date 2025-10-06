@@ -70,22 +70,26 @@ class BaseAI:
             reward: Reward signal (1.0 for positive, 0.0 for negative)
         """
         try:
-            # Get the chosen activity's embedding
-            embedding = np.array(json.loads(chosen_activity['embedding']))
+            # Validate context vector dimensions
+            if len(context_vector) != 40:
+                print(f"Error: Context vector has {len(context_vector)} dimensions, expected 40")
+                return False
             
             # For contextual bandits, we use the context vector as features
-            # and the embedding for similarity calculation
-            # This is simpler and more effective for this use case
+            # The model learns which contexts lead to positive outcomes
             
             # Train the model with context vector as features
             self.model.partial_fit([context_vector], [int(reward)], classes=[0, 1])
             self.is_fitted = True
             
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            print(f"Model trained successfully with context: {context_vector[:5]}... (first 5 dims)")
+            return True
+            
+        except Exception as e:
             print(f"Error training model: {e}")
+            print(f"Context vector shape: {context_vector.shape if hasattr(context_vector, 'shape') else 'No shape'}")
+            print(f"Context vector type: {type(context_vector)}")
             return False
-        
-        return True
     
     def save_model(self, db: Session) -> bool:
         """Save the model weights to database."""

@@ -263,6 +263,10 @@ def train_ai(
         base_ai.load_model(db)  # Load existing model if available
         
         # Train the model
+        print(f"Training AI with context: {context_tags}")
+        print(f"Context vector shape: {context_vector.shape}")
+        print(f"Chosen activity: {chosen_activity.name}")
+        
         success = base_ai.train(context_vector, {
             "id": chosen_activity.id,
             "name": chosen_activity.name,
@@ -270,6 +274,7 @@ def train_ai(
         }, reward=1.0)
         
         if not success:
+            print("AI training failed - check logs for details")
             raise HTTPException(status_code=500, detail="Failed to train AI model")
         
         # Save updated model
