@@ -17,3 +17,4 @@ python-dotenv==1.0.0
 
 # AI/ML (light dependencies only)
 # sentence-transformers and huggingface-hub removed for faster deployment
+scikit-learn==1.3.2
