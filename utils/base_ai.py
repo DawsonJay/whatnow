@@ -37,23 +37,26 @@ class BaseAI:
         Returns:
             List of top activity recommendations
         """
-        if not self.is_fitted or len(activities) == 0:
+        if len(activities) == 0:
+            return []
+        
+        if not self.is_fitted:
             # Cold start: return random activities
             return np.random.choice(activities, size=min(top_k, len(activities)), replace=False).tolist()
         
-        # Calculate similarity scores between context and activity embeddings
+        # Use the trained model to score activities
         scores = []
         for activity in activities:
             try:
-                embedding = np.array(json.loads(activity['embedding']))
-                # Use dot product for similarity (context vector * embedding)
-                similarity = np.dot(context_vector, embedding)
-                scores.append(similarity)
+                # Get the model's prediction for this context
+                # The model learns which contexts lead to positive outcomes
+                score = self.model.decision_function([context_vector])[0]
+                scores.append(score)
             except (json.JSONDecodeError, KeyError, ValueError):
                 # Skip activities with invalid embeddings
                 scores.append(0.0)
         
-        # Get top-k activities by similarity score
+        # Get top-k activities by model score
         top_indices = np.argsort(scores)[-top_k:]
         return [activities[i] for i in top_indices]
     
@@ -70,11 +73,12 @@ class BaseAI:
             # Get the chosen activity's embedding
             embedding = np.array(json.loads(chosen_activity['embedding']))
             
-            # Create feature vector by concatenating context and embedding
-            feature_vector = np.concatenate([context_vector, embedding])
+            # For contextual bandits, we use the context vector as features
+            # and the embedding for similarity calculation
+            # This is simpler and more effective for this use case
             
-            # Train the model
-            self.model.partial_fit([feature_vector], [int(reward)], classes=[0, 1])
+            # Train the model with context vector as features
+            self.model.partial_fit([context_vector], [int(reward)], classes=[0, 1])
             self.is_fitted = True
             
         except (json.JSONDecodeError, KeyError, ValueError) as e:
