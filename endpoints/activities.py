@@ -4,10 +4,12 @@ Activity-related endpoints for the WhatNow AI system.
 """
 
 import json
+import uuid
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from utils.database import get_database_session, Activity, Base, engine
+from utils.base_ai import BaseAI, encode_context
 # from utils.embeddings import create_activity_payload  # Removed for faster deployment
 
 router = APIRouter(prefix="/activities", tags=["activities"])
@@ -22,7 +24,7 @@ def init_database():
         
         return {
             "message": "Database initialized successfully",
-            "tables_created": ["activities"]
+            "tables_created": ["activities", "ai_models"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to initialize database: {str(e)}")
@@ -146,3 +148,142 @@ def list_activities(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list activities: {str(e)}")
+
+@router.post("/game/start")
+def start_game(
+    context_tags: List[str],
+    db: Session = Depends(get_database_session)
+):
+    """
+    Start a new recommendation session.
+    
+    Args:
+        context_tags: List of selected context tags (e.g., ["arty", "indoor", "evening"])
+        
+    Returns:
+        Session ID and top 100 activity recommendations
+    """
+    try:
+        # Validate context tags
+        if len(context_tags) < 3:
+            raise HTTPException(status_code=400, detail="Please select at least 3 context tags")
+        
+        if len(context_tags) > 8:
+            raise HTTPException(status_code=400, detail="Please select no more than 8 context tags")
+        
+        # Encode context to vector
+        context_vector = encode_context(context_tags)
+        
+        # Get all activities with embeddings
+        activities = db.query(Activity).all()
+        
+        if not activities:
+            raise HTTPException(status_code=404, detail="No activities found in database")
+        
+        # Initialize Base AI
+        base_ai = BaseAI()
+        base_ai.load_model(db)  # Load existing model if available
+        
+        # Convert activities to format expected by AI
+        activity_list = []
+        for activity in activities:
+            activity_list.append({
+                "id": activity.id,
+                "name": activity.name,
+                "embedding": activity.embedding
+            })
+        
+        # Get AI recommendations
+        recommendations = base_ai.get_recommendations(context_vector, activity_list, top_k=100)
+        
+        # Generate session ID
+        session_id = str(uuid.uuid4())
+        
+        return {
+            "session_id": session_id,
+            "recommendations": [
+                {
+                    "id": activity["id"],
+                    "name": activity["name"]
+                }
+                for activity in recommendations
+            ],
+            "context_tags": context_tags,
+            "total_recommendations": len(recommendations)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
+
+@router.post("/game/train")
+def train_ai(
+    session_id: str,
+    chosen_activity_id: int,
+    context_tags: List[str],
+    db: Session = Depends(get_database_session)
+):
+    """
+    Train the AI based on user's choice.
+    
+    Args:
+        session_id: Session ID from start_game
+        chosen_activity_id: ID of the activity the user chose
+        context_tags: Context tags used in the session
+        
+    Returns:
+        Training confirmation
+    """
+    try:
+        # Validate inputs
+        if not session_id:
+            raise HTTPException(status_code=400, detail="Session ID is required")
+        
+        if not chosen_activity_id:
+            raise HTTPException(status_code=400, detail="Chosen activity ID is required")
+        
+        if not context_tags:
+            raise HTTPException(status_code=400, detail="Context tags are required")
+        
+        # Get the chosen activity
+        chosen_activity = db.query(Activity).filter(Activity.id == chosen_activity_id).first()
+        
+        if not chosen_activity:
+            raise HTTPException(status_code=404, detail="Chosen activity not found")
+        
+        # Encode context to vector
+        context_vector = encode_context(context_tags)
+        
+        # Initialize Base AI
+        base_ai = BaseAI()
+        base_ai.load_model(db)  # Load existing model if available
+        
+        # Train the model
+        success = base_ai.train(context_vector, {
+            "id": chosen_activity.id,
+            "name": chosen_activity.name,
+            "embedding": chosen_activity.embedding
+        }, reward=1.0)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to train AI model")
+        
+        # Save updated model
+        if not base_ai.save_model(db):
+            raise HTTPException(status_code=500, detail="Failed to save AI model")
+        
+        return {
+            "message": "AI model updated successfully",
+            "session_id": session_id,
+            "chosen_activity": {
+                "id": chosen_activity.id,
+                "name": chosen_activity.name
+            },
+            "context_tags": context_tags
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to train AI: {str(e)}")

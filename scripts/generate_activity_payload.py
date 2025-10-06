@@ -71,7 +71,7 @@ def generate_activity_payload():
         # Find most similar activity
         similarities = []
         for activity in activities[:10]:  # Test with first 10 activities
-            activity_embedding = np.array(json.loads(activity['embedding']))
+            activity_embedding = np.array(activity['embedding'])  # Already a list, no JSON parsing needed
             similarity = np.dot(query_embedding, activity_embedding) / (
                 np.linalg.norm(query_embedding) * np.linalg.norm(activity_embedding)
             )

@@ -32,6 +32,13 @@ class Activity(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class AIModel(Base):
+    """AI model storage for Base AI weights."""
+    __tablename__ = "ai_models"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    weights = Column(Text)  # JSON string of model weights
+
 def get_database_session() -> Generator[Session, None, None]:
     """Get database session."""
     db = SessionLocal()
