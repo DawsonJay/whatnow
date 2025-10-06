@@ -219,9 +219,7 @@ def start_game(
 
 @router.post("/game/train")
 def train_ai(
-    session_id: str,
-    chosen_activity_id: int,
-    context_tags: List[str],
+    request: Dict[str, Any],
     db: Session = Depends(get_database_session)
 ):
     """
@@ -236,6 +234,11 @@ def train_ai(
         Training confirmation
     """
     try:
+        # Extract parameters from request
+        session_id = request.get("session_id")
+        chosen_activity_id = request.get("chosen_activity_id")
+        context_tags = request.get("context_tags", [])
+        
         # Validate inputs
         if not session_id:
             raise HTTPException(status_code=400, detail="Session ID is required")
