@@ -91,6 +91,18 @@ class BaseAI:
             print(f"Context vector type: {type(context_vector)}")
             return False
     
+    def get_model_weights(self) -> Dict[str, Any]:
+        """Get model weights for Session AI initialization."""
+        if not self.is_fitted:
+            return None
+        
+        return {
+            "coef": self.model.coef_.tolist() if hasattr(self.model, 'coef_') else None,
+            "intercept": self.model.intercept_.tolist() if hasattr(self.model, 'intercept_') else None,
+            "classes": self.model.classes_.tolist() if hasattr(self.model, 'classes_') else None,
+            "is_fitted": self.is_fitted
+        }
+    
     def save_model(self, db: Session) -> bool:
         """Save the model weights to database."""
         try:

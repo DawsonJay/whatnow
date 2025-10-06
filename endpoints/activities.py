@@ -196,6 +196,9 @@ def start_game(
         # Get AI recommendations
         recommendations = base_ai.get_recommendations(context_vector, activity_list, top_k=100)
         
+        # Get Base AI weights for Session AI initialization
+        base_ai_weights = base_ai.get_model_weights()
+        
         # Generate session ID
         session_id = str(uuid.uuid4())
         
@@ -208,6 +211,7 @@ def start_game(
                 }
                 for activity in recommendations
             ],
+            "base_ai_weights": base_ai_weights,  # For Session AI initialization
             "context_tags": context_tags,
             "total_recommendations": len(recommendations)
         }
