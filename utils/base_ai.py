@@ -19,7 +19,7 @@ class BaseAI:
             learning_rate='adaptive',
             eta0=0.01,  # Slow learning rate for Base AI
             random_state=42,
-            loss='log'  # Logistic regression for binary classification
+            loss='log_loss'  # Logistic regression for binary classification
         )
         self.is_fitted = False
         self.context_dim = 40  # 40 context tags
