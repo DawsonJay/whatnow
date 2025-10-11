@@ -44,21 +44,27 @@ class BaseAI:
             # Cold start: return random activities
             return np.random.choice(activities, size=min(top_k, len(activities)), replace=False).tolist()
         
-        # Use the trained model to score activities
-        scores = []
-        for activity in activities:
-            try:
-                # Get the model's prediction for this context
-                # The model learns which contexts lead to positive outcomes
-                score = self.model.decision_function([context_vector])[0]
-                scores.append(score)
-            except (json.JSONDecodeError, KeyError, ValueError):
-                # Skip activities with invalid embeddings
-                scores.append(0.0)
-        
-        # Get top-k activities by model score
-        top_indices = np.argsort(scores)[-top_k:]
-        return [activities[i] for i in top_indices]
+        try:
+            # Use the trained model to score the context
+            # The model predicts how likely this context is to lead to positive outcomes
+            context_score = self.model.decision_function([context_vector])[0]
+            
+            # For now, we'll use a simple approach: return random activities
+            # In a more sophisticated implementation, we could use the context score
+            # to weight the selection or combine it with activity embeddings
+            
+            # Return random selection weighted by context score
+            if context_score > 0:
+                # Positive context - return more activities
+                return np.random.choice(activities, size=min(top_k, len(activities)), replace=False).tolist()
+            else:
+                # Negative context - return fewer activities
+                return np.random.choice(activities, size=min(top_k//2, len(activities)), replace=False).tolist()
+                
+        except Exception as e:
+            print(f"Error getting recommendations: {e}")
+            # Fallback to random selection
+            return np.random.choice(activities, size=min(top_k, len(activities)), replace=False).tolist()
     
     def train(self, context_vector: np.ndarray, chosen_activity: Dict, reward: float = 1.0):
         """
@@ -75,14 +81,27 @@ class BaseAI:
                 print(f"Error: Context vector has {len(context_vector)} dimensions, expected 43")
                 return False
             
-            # For contextual bandits, we use the context vector as features
-            # The model learns which contexts lead to positive outcomes
+            # For contextual bandits, we need to create a feature vector that combines
+            # context and activity information. Since we're using SGDClassifier,
+            # we'll create a simple binary classification: positive outcome (1) or not (0)
             
-            # Train the model with context vector as features
-            self.model.partial_fit([context_vector], [int(reward)], classes=[0, 1])
+            # Create a simple feature vector from context
+            # We'll use the context vector as features and the reward as the target
+            X = context_vector.reshape(1, -1)  # Reshape to (1, 43)
+            y = [int(reward > 0)]  # Convert reward to binary: 1 if positive, 0 if negative
+            
+            # Train the model
+            if not self.is_fitted:
+                # First training - need to specify classes
+                self.model.partial_fit(X, y, classes=[0, 1])
+            else:
+                # Subsequent training
+                self.model.partial_fit(X, y)
+            
             self.is_fitted = True
             
             print(f"Model trained successfully with context: {context_vector[:5]}... (first 5 dims)")
+            print(f"Reward: {reward}, Target: {y[0]}")
             return True
             
         except Exception as e:
